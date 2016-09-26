@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Flot Examples: Real-time updates</title>
+    <title>Visualise requestIdleCallback</title>
     <link href="examples.css" rel="stylesheet" type="text/css">
     <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../../excanvas.min.js"></script><![endif]-->
     <script language="javascript" type="text/javascript" src="flot/jquery.js"></script>
@@ -13,12 +13,16 @@
       var useAF;
       var update;
       var running = false;
+      var respect;
 
       function NumberData() {
         var data = new Array(300).fill({short:0,long:0});;
         var short = 0;
         var long = 0;
         var handle = 0;
+        var formatter = function(v, axis) {
+          return "#" + v;
+        }
 
         var callback = function(d) {
           let rem = d.timeRemaining();
@@ -29,9 +33,16 @@
           }
 
           let t = +document.getElementById('idleperiod').value;
-          t = Math.max(rem - t, 0);
-          while (t < d.timeRemaining()) {
+          if (respect) {
+            t = Math.max(rem - t, 0);
+            while (t < d.timeRemaining()) {
 
+            }
+          } else {
+            var d = Date.now() + t;
+            while (Date.now() < d) {
+
+            }
           }
 
           if (running) {
@@ -54,7 +65,7 @@
             res1[i] = [i, v.short];
             res2[i] = [i, v.long];
           }
-          return {ymax: Math.round(ymax * 1.1) + 1, data: [res1, res2] };
+          return {ymax: Math.round(ymax * 1.1) + 1, data: [res1, res2], formatter: formatter };
         }
 
         this.start = function() {
@@ -71,15 +82,26 @@
       function TimeRemainingData() {
         var data = new Array(300).fill(0);
         var handle = 0;
+        var formatter = function(v, axis) {
+          return v.toFixed(axis.tickDecimals) + "ms";
+        }
 
         var callback = function(d) {
           data = data.slice(1);
           let rem = d.timeRemaining();
           data.push(rem);
-          let t = +document.getElementById('idleperiod').value;
-          t = Math.max(rem - t, 0);
-          while (t < d.timeRemaining()) {
 
+          let t = +document.getElementById('idleperiod').value;
+          if (respect) {
+            t = Math.max(rem - t, 0);
+            while (t < d.timeRemaining()) {
+
+            }
+          } else {
+            var d = Date.now() + t;
+            while (Date.now() < d) {
+
+            }
           }
 
           if (running) {
@@ -96,7 +118,7 @@
             res[i] = [i, v];
           }
 
-          return {ymax: Math.round(ymax * 1.1) + 1, data: [res]}
+          return {ymax: Math.round(ymax * 1.1) + 1, data: [res], formatter: formatter }
         }
 
         this.start = function() {
@@ -137,6 +159,7 @@
 
         toggleAF = function toggleAF() {
           useAF = document.getElementById("useAF").checked;
+          respect = document.getElementById("respect").checked;
           document.getElementById("updateInterval").disabled = useAF;
         }
 
@@ -156,6 +179,10 @@
             current = source;
             current.start();
           }
+        }
+
+        toggleRespect = function toggleRespect() {
+          respect = document.getElementById("respect").checked;
         }
 
         toggleGraph(document.querySelector('input[name="graph-type"]:checked'));
@@ -179,7 +206,8 @@
             shadowSize: 0       // Drawing is faster without shadows
           },
           yaxis: {
-            min: 0
+            min: 0,
+            minTickSize: 1
           },
           xaxis: {
             show: false
@@ -193,9 +221,10 @@
           }
 
           var data = current.getData();
-          var yaxes = plot.getYAxes();
+          var yaxes = plot.getOptions().yaxes[0];
 
-          plot.getOptions().yaxes[0].max = data.ymax;
+          yaxes.max = data.ymax;
+          yaxes.tickFormatter = data.formatter;
           plot.setupGrid();
           plot.setData(data.data);
           plot.draw();
@@ -230,6 +259,8 @@
       <p>Use requestAnimationFrame: <input id="useAF" type="checkbox" onclick="toggleAF()"></p>
 
       <p>Time to spend in idle callback <input type="text" id="idleperiod" value="10"/></p>
+
+      <p>Respect time remaining: <input id="respect" type="checkbox" checked onclick="toggleRespect()"></p>
 
       <input type="button" onclick="toggle()" value="Toggle" />
     </div>
