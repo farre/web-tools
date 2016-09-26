@@ -11,46 +11,16 @@
 
       var toogle;
       var useAF;
+      var update;
+      var running = false;
 
-      $(function() {
-
-        // We use an inline data source in the example, usually data would
-        // be fetched from a server
-
-        var data = new Array(300).fill({short:0,long:0});
+      function NumberData() {
+        var data = new Array(300).fill({short:0,long:0});;
         var short = 0;
         var long = 0;
+        var handle = 0;
 
-        function getData() {
-          data = data.slice(1);
-          data.push({short:short, long:long});
-          short = 0;
-          long = 0;
-          let ymax = 1;
-          let res1 = new Array(300);
-          let res2 = new Array(300);
-          for (let i in data) {
-            let v =  data[i];
-            ymax = Math.max(ymax, v.short);
-            ymax = Math.max(ymax, v.long);
-            res1[i] = [i, v.short];
-            res2[i] = [i, v.long];
-          }
-          return {ymax: Math.round(ymax * 1.1) + 1, shortdata: res1, longdata: res2};
-        }
-
-        var counter = 0;
-        var running = false;
-        var maxTime = 0;
-
-        toggle = function toggle() {
-          useAF = document.getElementById("useAF").checked;
-          running = !running;
-          update();
-          requestIdleCallback(callback);
-        }
-
-        function callback(d) {
+        var callback = function(d) {
           let rem = d.timeRemaining();
           if (rem > 16.7) {
             long++;
@@ -65,11 +35,130 @@
           }
 
           if (running) {
-            requestIdleCallback(callback);
+            handle = requestIdleCallback(callback);
           }
         }
 
-        // Set up the control widget
+        this.getData = function() {
+          data = data.slice(1);
+          data.push({short:short, long:long});
+          short = 0;
+          long = 0;
+          let ymax = 1;
+          let res1 = new Array(300);
+          let res2 = new Array(300);
+          for (let i in data) {
+            let v =  data[i];
+            ymax = Math.max(ymax, v.short);
+            ymax = Math.max(ymax, v.long);
+            res1[i] = [i, v.short];
+            res2[i] = [i, v.long];
+          }
+          return {ymax: Math.round(ymax * 1.1) + 1, data: [res1, res2] };
+        }
+
+        this.start = function() {
+          data = new Array(300).fill({short:0,long:0});;
+          handle = requestIdleCallback(callback);
+        }
+
+        this.stop = function() {
+          cancelIdleCallback(handle);
+          handle = 0;
+        }
+      }
+
+      function TimeRemainingData() {
+        var data = new Array(300).fill(0);
+        var handle = 0;
+
+        var callback = function(d) {
+          data = data.slice(1);
+          let rem = d.timeRemaining();
+          data.push(rem);
+          let t = +document.getElementById('idleperiod').value;
+          t = Math.max(rem - t, 0);
+          while (t < d.timeRemaining()) {
+
+          }
+
+          if (running) {
+            handle = requestIdleCallback(callback);
+          }
+        }
+
+        this.getData = function() {
+          let ymax = 1;
+          let res = new Array(300);
+          for (let i in data) {
+            let v =  data[i];
+            ymax = Math.max(ymax, v);
+            res[i] = [i, v];
+          }
+
+          return {ymax: Math.round(ymax * 1.1) + 1, data: [res]}
+        }
+
+        this.start = function() {
+          data = new Array(300).fill(0);
+          handle = requestIdleCallback(callback);
+        }
+
+        this.stop = function() {
+          cancelIdleCallback(handle);
+          handle = 0;
+        }
+      }
+
+      $(function() {
+        var current = {stop: function(){}};
+        var timeData = new TimeRemainingData();
+        var numberData = new NumberData();
+        var handle = 0;
+
+        toggle = function toggle() {
+          if (running) {
+            if (useAF) {
+              cancelAnimationFrame(handle);
+            } else {
+              clearTimeout(handle);
+            }
+
+            current.stop();
+          }
+
+          toggleAF();
+          running = !running;
+          if (running) {
+            update();
+            current.start();
+          }
+        }
+
+        toggleAF = function toggleAF() {
+          useAF = document.getElementById("useAF").checked;
+          document.getElementById("updateInterval").disabled = useAF;
+        }
+
+        toggleGraph = function toggleGraph(self) {
+          var source;
+          switch(self.id) {
+            case "remaining":
+              source = timeData;
+              break;
+            case "number":
+              source = numberData;
+              break;
+          }
+
+          if (source !== current) {
+            current.stop();
+            current = source;
+            current.start();
+          }
+        }
+
+        toggleGraph(document.querySelector('input[name="graph-type"]:checked'));
 
         var updateInterval = 30;
         $("#updateInterval").val(updateInterval).change(function () {
@@ -85,8 +174,7 @@
           }
         });
 
-        var data2 = getData();
-        var plot = $.plot("#placeholder", [ data2.shortdata, data2.longdata ], {
+        var plot = $.plot("#placeholder", current.getData(), {
           series: {
             shadowSize: 0       // Drawing is faster without shadows
           },
@@ -104,18 +192,19 @@
             return;
           }
 
-          var data = getData();
+          var data = current.getData();
           var yaxes = plot.getYAxes();
 
           plot.getOptions().yaxes[0].max = data.ymax;
           plot.setupGrid();
-          plot.setData([data.shortdata, data.longdata]);
+          plot.setData(data.data);
           plot.draw();
 
+          var fn = function () { update(); };
           if (useAF) {
-            requestAnimationFrame(update);
+            handle = requestAnimationFrame(fn);
           } else {
-            setTimeout(update, updateInterval);
+            handle = setTimeout(fn, updateInterval);
           }
         }
 
@@ -125,30 +214,20 @@
 
         $("#footer").prepend("Flot " + $.plot.version + " &ndash; ");
       });
-
-      function toggleAF() {
-        useAF = document.getElementById("useAF").checked;
-        document.getElementById("updateInterval").disabled = useAF;
-      }
     </script>
   </head>
   <body>
-
-    <div id="header">
-      <h2>Real-time updates</h2>
-    </div>
-
     <div id="content">
 
       <div class="demo-container">
         <div id="placeholder" class="demo-placeholder"></div>
       </div>
 
-      <p>You can update a chart periodically to get a real-time effect by using a timer to insert the new data in the plot and redraw it.</p>
-
+      <p><input type="radio" id="remaining" onclick="toggleGraph(this)" name="graph-type" checked>Show total allotted remaining time per update</input></p>
+      <p><input type="radio" id="number" onclick="toggleGraph(this)" name="graph-type">Show number of idle calls per update</input></p>
       <p>Time between updates: <input id="updateInterval" type="text" value="" style="text-align: right; width:5em"> milliseconds</p>
 
-      <p>Use requestAnimationFrame: <input id="useAF" type="checkbox" onclick="toggleAF()"> milliseconds</p>
+      <p>Use requestAnimationFrame: <input id="useAF" type="checkbox" onclick="toggleAF()"></p>
 
       <p>Time to spend in idle callback <input type="text" id="idleperiod" value="10"/></p>
 
