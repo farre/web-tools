@@ -243,6 +243,8 @@
 
         $("#footer").prepend("Flot " + $.plot.version + " &ndash; ");
       });
+
+      document.getElementById(idleperiod).enabled = !document.getElementById("useAF").checked;
     </script>
   </head>
   <body>
