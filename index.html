@@ -238,10 +238,6 @@
         }
 
         update();
-
-        // Add the Flot version string to the footer
-
-        $("#footer").prepend("Flot " + $.plot.version + " &ndash; ");
       });
 
       document.getElementById(idleperiod).enabled = !document.getElementById("useAF").checked;
@@ -266,10 +262,5 @@
 
       <input type="button" onclick="toggle()" value="Toggle" />
     </div>
-
-    <div id="footer">
-      Copyright &copy; 2007 - 2014 IOLA and Ole Laursen
-    </div>
-
   </body>
 </html>
