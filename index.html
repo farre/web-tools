@@ -248,15 +248,15 @@
         <div id="placeholder" class="demo-placeholder"></div>
       </div>
 
-      <p><input type="radio" id="remaining" onclick="toggleGraph(this)" name="graph-type" checked>Show total allotted remaining time per update</input></p>
-      <p><input type="radio" id="number" onclick="toggleGraph(this)" name="graph-type">Show number of idle calls per update</input></p>
+      <p><input type="radio" id="remaining" onclick="toggleGraph(this)" name="graph-type" checked><label for="remaining">Show total allotted remaining time per update</label></p>
+      <p><input type="radio" id="number" onclick="toggleGraph(this)" name="graph-type"><label for="number">Show number of idle calls per update</label></p>
       <p>Time between updates: <input id="updateInterval" type="text" value="" style="text-align: right; width:5em"> milliseconds</p>
 
-      <p>Use requestAnimationFrame: <input id="useAF" type="checkbox" onclick="toggleAF()"></p>
+      <p><label for="useAF">Use requestAnimationFrame:</label> <input id="useAF" type="checkbox" onclick="toggleAF()"></p>
 
       <p>Time to spend in idle callback <input type="text" id="idleperiod" value="10"/></p>
 
-      <p>Respect time remaining: <input id="respect" type="checkbox" checked onclick="toggleRespect()"></p>
+      <p><label for="respect">Respect time remaining:</label> <input id="respect" type="checkbox" checked onclick="toggleRespect()"></p>
 
       <input type="button" onclick="toggle()" value="Toggle" />
     </div>
