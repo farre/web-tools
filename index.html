@@ -24,6 +24,9 @@
           return "#" + v;
         }
 
+        let resdata1 = new Array(300);
+        let resdata2 = new Array(300);
+
         var callback = function(d) {
           let rem = d.timeRemaining();
           if (rem > 20) {
@@ -56,8 +59,8 @@
           short = 0;
           long = 0;
           let ymax = 1;
-          let res1 = new Array(300);
-          let res2 = new Array(300);
+          let res1 = resdata1;
+          let res2 = resdata2;
           for (let i in data) {
             let v =  data[i];
             ymax = Math.max(ymax, v.short);
@@ -86,6 +89,8 @@
           return v.toFixed(axis.tickDecimals) + "ms";
         }
 
+        let resdata = new Array(300);
+
         var callback = function(d) {
           data = data.slice(1);
           let rem = d.timeRemaining();
@@ -111,7 +116,7 @@
 
         this.getData = function() {
           let ymax = 1;
-          let res = new Array(300);
+          let res = resdata;
           for (let i in data) {
             let v =  data[i];
             ymax = Math.max(ymax, v);
