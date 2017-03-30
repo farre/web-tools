@@ -16,7 +16,9 @@
       var respect;
 
       function NumberData() {
-        var data = new Array(300).fill({short:0,long:0});;
+        let size = 300;
+        var data = new Array(size).fill({short:0,long:0});;
+        let cursor = 0;
         var short = 0;
         var long = 0;
         var handle = 0;
@@ -54,25 +56,26 @@
         }
 
         this.getData = function() {
-          data = data.slice(1);
-          data.push({short:short, long:long});
+          data[(cursor++) % size] = {short:short, long:long};
           short = 0;
           long = 0;
           let ymax = 1;
           let res1 = resdata1;
           let res2 = resdata2;
-          for (let i in data) {
-            let v =  data[i];
+          for (let n = 0; n < size; ++n) {
+            let v =  data[(n + cursor) % size];
             ymax = Math.max(ymax, v.short);
             ymax = Math.max(ymax, v.long);
-            res1[i] = [i, v.short];
-            res2[i] = [i, v.long];
+            res1[n] = [n, v.short];
+            res2[n] = [n, v.long];
           }
+
           return {ymax: Math.round(ymax * 1.1) + 1, data: [res1, res2], formatter: formatter };
         }
 
         this.start = function() {
-          data = new Array(300).fill({short:0,long:0});;
+          data = data.fill({short:0,long:0});
+          cursor = 0;
           handle = requestIdleCallback(callback);
         }
 
@@ -83,7 +86,9 @@
       }
 
       function TimeRemainingData() {
-        var data = new Array(300).fill(0);
+        let size = 300;
+        let cursor = 0;
+        var data = new Array(size).fill(0);
         var handle = 0;
         var formatter = function(v, axis) {
           return v.toFixed(axis.tickDecimals) + "ms";
@@ -92,9 +97,8 @@
         let resdata = new Array(300);
 
         var callback = function(d) {
-          data = data.slice(1);
           let rem = d.timeRemaining();
-          data.push(rem);
+          data[(cursor++) % size] = rem;
 
           let t = +document.getElementById('idleperiod').value;
           if (respect) {
@@ -117,17 +121,19 @@
         this.getData = function() {
           let ymax = 1;
           let res = resdata;
-          for (let i in data) {
-            let v =  data[i];
+
+          for (let n = 0; n < size; ++n) {
+            let v =  data[(n + cursor) % size];
             ymax = Math.max(ymax, v);
-            res[i] = [i, v];
+            res[n] = [n, v];
           }
 
           return {ymax: Math.round(ymax * 1.1) + 1, data: [res], formatter: formatter }
         }
 
         this.start = function() {
-          data = new Array(300).fill(0);
+          data = data.fill(0);
+          cursor = 0;
           handle = requestIdleCallback(callback);
         }
 
