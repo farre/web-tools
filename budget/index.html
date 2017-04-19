@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8"/>
+</head>
+<script>
+  Number.prototype.times = function* times() {
+    let i = 0; while (i++ < this) {
+      yield i;
+    }
+  }
+  let load = 0.05;
+  let slice = 10;
+  let period = 5000;
+  let spread = "uniform";
+  let work = period * load / slice;
+
+  let running = false;
+  let pending = 0;
+  let done = 0;
+  let timeouts = [];
+  let handle = 0;
+
+  function run() {
+    let idle = period * (1 - load) / slice;
+    let initialIdle = idle;
+    let randm = false;
+
+    if (spread === "cluster") {
+      initialIdle = idle * slice - slice;
+      idle = 1;
+    } else if (spread === "random") {
+      randm = true;
+    }
+
+    let first = true;
+    let previousIdle = 0;
+    for (let n of slice.times()) {
+      let w = work;
+      let i = first ? initialIdle : idle;
+      if (randm) {
+        let r = n !== slice ? (Math.random() - 0.5) * idle : 0;
+        i += r - previousIdle;
+        previousIdle = r
+      }
+
+      first = false;
+      timeouts.push({work: w, idle: i});
+    }
+
+    runSlice()
+  }
+
+  function runSlice() {
+    if (!running) {
+      return;
+    }
+
+    let slice = timeouts.pop();
+    handle = setTimeout(_ => busy(slice.work), slice.idle);
+  }
+
+  function busy(work) {
+    let end = performance.now() + work;
+    while (performance.now() < end) {
+
+    }
+
+    if (timeouts.length) {
+      runSlice();
+    } else {
+      run();
+    }
+  }
+
+  function start() {
+    let b = document.getElementById('toggle');
+    b.value = "Stop";
+    b.onclick = stop;
+    running = true;
+
+    run();
+  }
+
+  function stop() {
+    let b = document.getElementById('toggle');
+    b.value = "Start";
+    b.onclick = start;
+    running = false;
+  }
+
+  function norm(e) {
+    switch(e.id) {
+      case "load": {
+        let v = +e.value;
+        v = isNaN(v) && load || v;
+        v = Math.min(Math.max(v, 0.0), 1.0);
+        load = e.value = v;
+        work = period * load / slice;
+        break;
+      }
+      case "slice": {
+        let v = +e.value;
+        v = isNaN(v) && slice || v;
+        v = Math.min(Math.max(v, 1), 100);
+        slice = e.value = v;
+        work = period * load / slice;
+        break;
+      }
+      case "period": {
+        let v = +e.value;
+        v = isNaN(v) && slice || v;
+        v = Math.min(Math.max(v, 1), 60000);
+        period = e.value = v;
+        work = period * load / slice;
+        break;
+      }
+      case "select": {
+        spread = e.options[e.selectedIndex].id;
+        break;
+      }
+    }
+
+    document.getElementById('work').innerText = work;
+  }
+
+  function reset(e) {
+    norm(e);
+    clearTimeout(handle);
+    timeouts = [];
+
+    if (running) {
+      run();
+    }
+  }
+
+  function init() {
+    norm(document.getElementById('load'));
+    norm(document.getElementById('slice'));
+    norm(document.getElementById('period'));
+    norm(document.getElementById('select'));
+  }
+
+  addEventListener('load', init);
+</script>
+Load: <input type="text" id="load" onchange="reset(this)" value="0.05"></input> ms<br />
+Slices#: <input type="text" id="slice" onchange="reset(this)" value="10"></input><br />
+Period: <input type="text" id="period" onchange="reset(this)" value="5000"></input> ms<br />
+Spread: <select id="select" onchange="reset(this)">
+  <option id="uniform">Uniform</option>
+  <option id="random">Random</option>n
+  <option id="cluster">Cluster</option>
+</select><br />
+<input id="toggle" type="button" value="Start" onclick="start()"><br />
+Length of work: <span id="work"></span>ms<br />
