@@ -13,6 +13,8 @@
   let period = 5000;
   let spread = "uniform";
   let work = period * load / slice;
+  let paused = false;
+  let pauseDelay = 5000;
 
   let running = false;
   let pending = 0;
@@ -53,6 +55,11 @@
   function runSlice() {
     if (!running) {
       return;
+    }
+
+    if (paused) {
+      alert("Press OK to resume");
+      paused = false;
     }
 
     let slice = timeouts.pop();
@@ -118,6 +125,12 @@
         spread = e.options[e.selectedIndex].id;
         break;
       }
+      case "pause": {
+        let p = +e.value;
+        v = isNaN(v) && pauseDelay || v;
+        v = Math.min(Math.max(v, 1), 60000);
+        pauseDelay = e.value = v;
+      }
     }
 
     document.getElementById('work').innerText = work;
@@ -140,15 +153,71 @@
     norm(document.getElementById('select'));
   }
 
+  function pause() {
+    setTimeout(_ => paused = true, pauseDelay)
+  }
+
   addEventListener('load', init);
 </script>
-Load: <input type="text" id="load" onchange="reset(this)" value="0.05"></input> ms<br />
-Slices#: <input type="text" id="slice" onchange="reset(this)" value="10"></input><br />
-Period: <input type="text" id="period" onchange="reset(this)" value="5000"></input> ms<br />
-Spread: <select id="select" onchange="reset(this)">
-  <option id="uniform">Uniform</option>
-  <option id="random">Random</option>n
-  <option id="cluster">Cluster</option>
-</select><br />
-<input id="toggle" type="button" value="Start" onclick="start()"><br />
-Length of work: <span id="work"></span>ms<br />
+<table>
+  <tr>
+    <td>
+      Load:
+    </td>
+    <td>
+      <input type="text" id="load" onchange="reset(this)" value="0.05"></input> ms
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Slices#:
+    </td>
+    <td>
+      <input type="text" id="slice" onchange="reset(this)" value="10"></input>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Period:
+    </td>
+    <td>
+      <input type="text" id="period" onchange="reset(this)" value="5000"></input> ms
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Spread:
+    </td>
+    <td>
+      <select id="select" onchange="reset(this)">
+        <option id="uniform">Uniform</option>
+        <option id="random">Random</option>n
+        <option id="cluster">Cluster</option>
+      </select>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Delay before pause:
+    </td>
+    <td>
+      <input type="text" id="pause" onchange="norm(this)" value="5000"></input> ms
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <input id="toggle" type="button" value="Start" onclick="start()">
+    </td>
+    <td>
+      <input type="button" value="Pause" onclick="pause()">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Length of work:
+    </td>
+    <td>
+      <span id="work"></span>ms
+    </td>
+  </tr>
+</table>
