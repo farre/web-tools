@@ -1,0 +1,49 @@
+<script src="pdf.js"></script>
+<script>
+  PDFJS.workerSrc = "pdf.worker.js";
+
+  var handleFiles = function() {
+    let canvas = document.createElement('canvas');
+    let context = canvas.getContext('2d');
+
+    function getBuffer(file) {
+      return new Promise(function (resolve) {
+        let reader = new FileReader();
+        reader.onload = function (e) {
+          resolve(new Uint8Array(e.target.result));
+        };
+        reader.readAsArrayBuffer(file);
+      })
+    }
+
+    function render(buffer) {
+      return PDFJS.getDocument(buffer).then(function(pdf) {
+        return pdf.getPage(1);
+      }).then(function (page) {
+        let viewport = page.getViewport(2.0);
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        return page.render({ canvasContext: context, viewport: viewport });
+      }).then(function() {
+        let img = document.createElement('img');
+        img.src = canvas.toDataURL();
+        document.body.appendChild(img);
+      });
+    }
+
+    function pdftopng(file) {
+      return getBuffer(file).then(render);
+    }
+
+    return function handleFiles(files) {
+      for (let f of files) {
+        var png = pdftopng(f);
+      }
+    }
+  }();
+
+
+</script>
+<body>
+<input type="file" id="input" onchange="handleFiles(this.files)" accept="application/pdf"></input><br />
+</body>
