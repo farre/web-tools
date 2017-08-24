@@ -2,15 +2,16 @@
 <head>
   <meta charset="utf-8"/>
 </head>
+<script src="unthrottlers.js"></script>
 <script>
   Number.prototype.times = function* times() {
     let i = 0; while (i++ < this) {
       yield i;
     }
   }
-  let load = 0.05;
+  let load = 0.5;
   let slice = 10;
-  let period = 5000;
+  let period = 1000;
   let spread = "uniform";
   let work = period * load / slice;
   let paused = false;
@@ -165,7 +166,7 @@
       Load:
     </td>
     <td>
-      <input type="text" id="load" onchange="reset(this)" value="0.05"></input> ms
+      <input type="text" id="load" onchange="reset(this)" value="0.5"></input> ms
     </td>
   </tr>
   <tr>
@@ -181,7 +182,7 @@
       Period:
     </td>
     <td>
-      <input type="text" id="period" onchange="reset(this)" value="5000"></input> ms
+      <input type="text" id="period" onchange="reset(this)" value="1000"></input> ms
     </td>
   </tr>
   <tr>
@@ -221,3 +222,13 @@
     </td>
   </tr>
 </table>
+
+<br/><br/>
+<input type="button" onclick="addUnthrottler('gUM')" value="Add gUM"/>
+<input type="button" onclick="addUnthrottler('iDB')" value="Add IndexedDB"/>
+<input type="button" onclick="addUnthrottler('ws')" value="Add WebSocket"/>
+<input type="button" onclick="addUnthrottler('rtc')" value="Add peer connection"/>
+<input type="button" onclick="clearUnthrottler()" value="Clear unthrottler" />
+<br/>
+In iframe <input type="checkbox" id="target" />
+<div id="container"></div>
