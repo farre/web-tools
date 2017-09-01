@@ -7,7 +7,7 @@ let socket = null;
 function addUnthrottler(type) {
   clearUnthrottler();
   new Promise(resolve => {
-    let target = document.getElementById('target');
+    let target = document.getElementById('inframe');
     if (target && target.checked) {
       let f = document.createElement('iframe');
       f.src = "unthrottled.html";
@@ -34,7 +34,8 @@ function addUnthrottler(type) {
 
 function clearUnthrottler() {
   stream = null;
-  if (rtc) {
+  let close = document.getElementById('closeonclear').checked;
+  if (rtc && close) {
     rtc.close()
   }
   rtc = null;
@@ -50,7 +51,7 @@ function clearUnthrottler() {
 
   iDBState.running = false;
 
-  if (socket) {
+  if (socket && close) {
     socket.close();
   }
   socket = null;
@@ -72,7 +73,7 @@ function addIndexedDB() {
     let db = e.target.result;
     let store = db.createObjectStore("testOS", {keyPath: "id"});
     let index = store.createIndex("index", ["col"]);
-  }
+  };
 
   req.onsuccess = e => {
     let db = e.target.result;
@@ -93,13 +94,13 @@ function addIndexedDB() {
         return;
       }
 
-      let req = store.put({id: ctr++, col: "foo"})
+      let req = store.put({id: ctr++, col: "foo"});
       req.onsuccess = putLoop;
       req.onerror = e => alert(e);
     }
 
     putLoop();
-  }
+  };
 }
 
 function addWebSocket() {
