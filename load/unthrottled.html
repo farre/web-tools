@@ -4,3 +4,10 @@
 </head>
 <script src="unthrottlers.js">
 </script>
+<script>
+  function navigate() {
+    document.location = document.getElementById('destination').value;
+  }
+</script>
+<input type="text" id="destination" />
+<input type="button" onclick="navigate()" value="Navigate" />
