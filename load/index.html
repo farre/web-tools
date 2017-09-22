@@ -228,8 +228,12 @@
 <input type="button" onclick="addUnthrottler('iDB')" value="Add IndexedDB"/>
 <input type="button" onclick="addUnthrottler('ws')" value="Add WebSocket"/>
 <input type="button" onclick="addUnthrottler('rtc')" value="Add peer connection"/>
+<input type="button" onclick="addUnthrottler('webaudio')" value="Add web audio"/>
+<input type="button" onclick="addUnthrottler('audio')" value="Add audio element"/>
+<input type="button" onclick="addUnthrottler('video')" value="Add video"/>
 <input type="button" onclick="clearUnthrottler()" value="Clear unthrottler" />
 <br/>
 In iframe <input type="checkbox" id="inframe" />
 Close on clear <input type="checkbox" id="closeonclear" /><br />
+Delay unthrottling <input type="checkbox" id="delayunthrottling" /><br />
 <div id="container"></div>

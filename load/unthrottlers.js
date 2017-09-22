@@ -3,6 +3,9 @@ let stream = null;
 let rtc = null;
 let iDBState = { running: false };
 let socket = null;
+let webaudionode = null;
+let audionode = null;
+let videonode = null;
 
 function addUnthrottler(type) {
   clearUnthrottler();
@@ -28,6 +31,12 @@ function addUnthrottler(type) {
         target.addIndexedDB(); break;
       case 'ws':
         target.addWebSocket(); break;
+      case 'webaudio':
+        target.addWebAudio(); break;
+      case 'audio':
+        target.addAudioElement(); break;
+      case 'video':
+        target.addVideoElement(); break;
     }
   });
 }
@@ -55,6 +64,27 @@ function clearUnthrottler() {
     socket.close();
   }
   socket = null;
+
+  if (webaudionode && close) {
+    webaudionode.stop();
+  }
+  webaudionode = null;
+
+  if (audionode) {
+    if (close) {
+      audionode.pause();
+    }
+
+    audionode.remove();
+  }
+
+  if (videonode) {
+    if (close) {
+      videonode.pause();
+    }
+
+    videonode.remove();
+  }
 }
 
 function addUserMedia() {
@@ -105,4 +135,34 @@ function addIndexedDB() {
 
 function addWebSocket() {
   socket = new WebSocket('wss://echo.websocket.org');
+}
+
+function addWebAudio() {
+  let context = new (window.AudioContext || window.webkitAudioContext)();
+
+  webaudionode = context.createOscillator();
+  webaudionode.type = 'square';
+  webaudionode.frequency.value = 440; // value in hertz
+  webaudionode.connect(context.destination);
+  webaudionode.start();
+}
+
+function addAudioElement() {
+  audionode = document.createElement('audio');
+  audionode.src = "sine.wav";
+  audionode.loop = true;
+
+  document.body.appendChild(audionode);
+
+  audionode.play();
+}
+
+function addVideoElement() {
+  videonode = document.createElement('video');
+  videonode.src = "video.webm";
+  videonode.loop = true;
+
+  document.body.appendChild(videonode);
+
+  videonode.play();
 }
