@@ -37,6 +37,8 @@ function addUnthrottler(type) {
         target.addAudioElement(); break;
       case 'video':
         target.addVideoElement(); break;
+      default:
+        break;
     }
   });
 }

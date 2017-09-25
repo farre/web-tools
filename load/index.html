@@ -23,6 +23,8 @@
   let timeouts = [];
   let handle = 0;
 
+  let callback = function() {}
+
   function run() {
     let idle = period * (1 - load) / slice;
     let initialIdle = idle;
@@ -64,11 +66,21 @@
     }
 
     let slice = timeouts.pop();
-    handle = setTimeout(_ => busy(slice.work), slice.idle);
+
+    handle = function() {
+      let work = slice.work;
+      let idle = slice.idle;
+      let start = performance.now();
+      return setTimeout(_ => busy(work, idle, start), idle);
+    }();
   }
 
-  function busy(work) {
-    let end = performance.now() + work;
+  function busy(work, delay, start) {
+    let now = performance.now();
+    let end = now + work;
+
+    callback(delay, now - start);
+
     while (performance.now() < end) {
 
     }
@@ -152,10 +164,30 @@
     norm(document.getElementById('slice'));
     norm(document.getElementById('period'));
     norm(document.getElementById('select'));
+
+    let params = (new URL(document.location)).searchParams;
+    document.getElementById('inframe').checked = params.get("inframe");
+    document.getElementById('closeonclear').checked = params.get("close");
+
+    if (params.get("test")) {
+      runTest();
+    }
   }
 
   function pause() {
     setTimeout(_ => paused = true, pauseDelay)
+  }
+
+  function runTest() {
+    window.open("test.html");
+  }
+
+  function setCallback(c) {
+    callback = c;
+  }
+
+  function runInFrame() {
+    document.getElementById('inframe').checked = true;
   }
 
   addEventListener('load', init);
@@ -232,6 +264,7 @@
 <input type="button" onclick="addUnthrottler('audio')" value="Add audio element"/>
 <input type="button" onclick="addUnthrottler('video')" value="Add video"/>
 <input type="button" onclick="clearUnthrottler()" value="Clear unthrottler" />
+<input type="button" onclick="runTest()" value="Run test" />
 <br/>
 In iframe <input type="checkbox" id="inframe" />
 Close on clear <input type="checkbox" id="closeonclear" /><br />

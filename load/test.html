@@ -1,0 +1,97 @@
+<script language="javascript" type="text/javascript" src="flot/jquery.js"></script>
+<script language="javascript" type="text/javascript" src="flot/jquery.flot.js"></script>
+
+<script>
+  let output_usage, output_next, output_unthrottler, div_usage, div_next;
+  let data;
+  let max = 0;
+  let unthrottlers = ['none', 'gUM', 'rtc', 'iDB', 'ws', 'webaudio', 'audio', 'video'];
+  let offset;
+  let next_ctr_handle = 0;
+  var next = 0;
+
+  let series = {
+    points: {
+      show: true
+    },
+    lines: {
+      show: true,
+      fillColor :
+                 { colors: [ { opacity: 0.8 }, { brightness: 0.6, opacity: 0.8 } ] }
+    }
+  }
+
+  function collectData(delay, actual) {
+    let value = (delay / actual) * 100;
+    max = Math.max(value, max);
+    data.push([performance.now() - offset, value])
+    output_usage.innerText = (value).toFixed(1);
+  }
+
+  function first(delay, actual) {
+    offset = performance.now();
+    opener.setCallback(collectData);
+  }
+
+  function start(n, time) {
+    clearInterval(next_ctr_handle);
+    div_next.style.display = 'none';
+    div_usage.style.display = 'inline';
+    data = [];
+    output_next.innerText = 0;
+    output_usage.innerText = 0;
+    output_unthrottler.innerText = unthrottlers[n];
+    // Dirty hack! Firefox doesn't throttle the very first timeout.
+    opener.setCallback(first);
+    opener.start();
+    setTimeout(() => opener.addUnthrottler(unthrottlers[n]), time / 2);
+    setTimeout(() => stop(n), time);
+  }
+
+  function stop(n) {
+    opener.stop();
+    opener.clearUnthrottler();
+    div_next.style.display = 'inline';
+    div_usage.style.display = 'none';
+    output_usage.innerText = 0;
+    output_unthrottler.innerText = "";
+    series.label = "Unthrottler: " + unthrottlers[n];
+
+    $.plot($("#plot" + n), [ data ], { yaxis: { max: max * 1.2 }, series: series });
+
+    if (n < unthrottlers.length) {
+      next = 30;
+      next_ctr_handle = setInterval(function() {
+        if (next) {
+          output_next.innerText = --next;
+        }
+      }, 1000);
+      setTimeout(() => start(n + 1, 30000), next * 1000);
+    }
+  }
+
+  function init() {
+    output_usage = document.getElementById('output_usage');
+    output_next = document.getElementById('output_next');
+    output_unthrottler = document.getElementById('output_unthrottler');
+    div_usage = document.getElementById('div_usage');
+    div_next = document.getElementById('div_next');
+    start(0, 60000);
+  }
+
+  addEventListener('load', init);
+</script>
+<div id="div_usage">
+  Current throttling level: <span id="output_usage"></span>%<br/>
+  Current unthrottler: <span id="output_unthrottler"></span>
+</div>
+<div id="div_next">Starting next test in: <span id="output_next"></span> seconds</div>
+
+<div id="plot0" style="width:600px;height:300px"></div><br/>
+<div id="plot1" style="width:600px;height:300px"></div><br/>
+<div id="plot2" style="width:600px;height:300px"></div><br/>
+<div id="plot3" style="width:600px;height:300px"></div><br/>
+<div id="plot4" style="width:600px;height:300px"></div><br/>
+<div id="plot5" style="width:600px;height:300px"></div><br/>
+<div id="plot6" style="width:600px;height:300px"></div><br/>
+<div id="plot7" style="width:600px;height:300px"></div><br/>
