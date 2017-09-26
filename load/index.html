@@ -79,7 +79,7 @@
     let now = performance.now();
     let end = now + work;
 
-    callback(delay, now - start);
+    callback(work, delay, now - start);
 
     while (performance.now() < end) {
 
@@ -106,6 +106,22 @@
     b.value = "Start";
     b.onclick = start;
     running = false;
+    clearTimeout(handle);
+    timeouts = [];
+    clearUnthrottler()
+
+    let url = new URL(document.location);
+    let params = url.searchParams;
+    params.set("inframe", document.getElementById('inframe').checked);
+    params.set("close", document.getElementById('closeonclear').checked);
+    params.set("test", false);
+    params.set("load", load);
+    params.set("slice", slice);
+    params.set("period", period);
+    params.set("spread", spread);
+    url.hash = "#" + Math.random();
+
+    document.location = url;
   }
 
   function norm(e) {
@@ -160,17 +176,21 @@
   }
 
   function init() {
+    let params = (new URL(document.location)).searchParams;
+    document.getElementById('inframe').checked = params.get("inframe");
+    document.getElementById('closeonclear').checked = params.get("close");
+    load = params.get("load");
+    slice = params.get("slice");
+    period = params.get("period");
+    spread = params.get("spread");
+
     norm(document.getElementById('load'));
     norm(document.getElementById('slice'));
     norm(document.getElementById('period'));
     norm(document.getElementById('select'));
 
-    let params = (new URL(document.location)).searchParams;
-    document.getElementById('inframe').checked = params.get("inframe");
-    document.getElementById('closeonclear').checked = params.get("close");
-
-    if (params.get("test")) {
-      runTest();
+    if (params.get("test") === "true") {
+      window.open("test.html");
     }
   }
 
@@ -179,7 +199,18 @@
   }
 
   function runTest() {
-    window.open("test.html");
+    let url = new URL(document.location);
+    let params = url.searchParams;
+    params.set("inframe", document.getElementById('inframe').checked);
+    params.set("close", document.getElementById('closeonclear').checked);
+    params.set("test", true);
+    params.set("load", load);
+    params.set("slice", slice);
+    params.set("period", period);
+    params.set("spread", spread);
+    url.hash = "#" + Math.random();
+
+    document.location = url;
   }
 
   function setCallback(c) {

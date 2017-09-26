@@ -16,21 +16,15 @@
     },
     lines: {
       show: true,
-      fillColor :
-                 { colors: [ { opacity: 0.8 }, { brightness: 0.6, opacity: 0.8 } ] }
     }
   }
 
-  function collectData(delay, actual) {
-    let value = (delay / actual) * 100;
-    max = Math.max(value, max);
+  function collectData(work, delay, actual) {
+    let value = (work / actual) * 100;
+    max = Math.max(max, value);
+
     data.push([performance.now() - offset, value])
     output_usage.innerText = (value).toFixed(1);
-  }
-
-  function first(delay, actual) {
-    offset = performance.now();
-    opener.setCallback(collectData);
   }
 
   function start(n, time) {
@@ -42,11 +36,12 @@
     output_next.innerText = 0;
     output_usage.innerText = 0;
     output_unthrottler.innerText = unthrottlers[n];
-    // Dirty hack! Firefox doesn't throttle the very first timeout.
-    opener.setCallback(first);
-    opener.start();
-    setTimeout(() => opener.addUnthrottler(unthrottlers[n]), time / 2);
-    setTimeout(() => stop(n), time);
+    opener.setCallback(collectData);
+    offset = performance.now();
+
+    setTimeout(() => opener.start(), 1000);
+    setTimeout(() => opener.addUnthrottler(unthrottlers[n]), 1000 + time / 2);
+    setTimeout(() => stop(n), 1000 + time);
   }
 
   function stop(n) {
@@ -60,14 +55,18 @@
 
     $.plot($("#plot" + n), [ data ], { yaxis: { max: max * 1.2 }, series: series });
 
-    if (n < unthrottlers.length) {
+    if (++n < unthrottlers.length) {
       next = 30;
       next_ctr_handle = setInterval(function() {
         if (next) {
           output_next.innerText = --next;
         }
       }, 1000);
-      setTimeout(() => start(n + 1, 30000), next * 1000);
+      setTimeout(() => start(n, 30000), next * 1000);
+    } else {
+      div_next.style.display = 'none';
+      div_usage.style.display = 'none';
+      document.getElementById('div_done').style.display = 'inline';
     }
   }
 
@@ -80,13 +79,18 @@
     start(0, 60000);
   }
 
+  function uninit() {
+    opener.stop();
+  }
   addEventListener('load', init);
+  addEventListener('unload', uninit);
 </script>
 <div id="div_usage">
   Current throttling level: <span id="output_usage"></span>%<br/>
   Current unthrottler: <span id="output_unthrottler"></span>
 </div>
 <div id="div_next">Starting next test in: <span id="output_next"></span> seconds</div>
+<div id="div_done" style="display:none">Done</div>
 
 <div id="plot0" style="width:600px;height:300px"></div><br/>
 <div id="plot1" style="width:600px;height:300px"></div><br/>
