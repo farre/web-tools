@@ -20,7 +20,7 @@
   }
 
   function collectData(work, delay, actual) {
-    let value = (work / actual) * 100;
+    let value = (work / (actual + work)) * 100;
     max = Math.max(max, value);
 
     data.push([performance.now() - offset, value])
@@ -45,7 +45,7 @@
     opener.setCallback(collectData);
     offset = performance.now();
 
-    opener.start();
+    setTimeout(() => opener.start(), 10);
     setTimeout(() => opener.addUnthrottler(unthrottlers[n]), time / 2);
     setTimeout(() => stop(n), time);
   }
@@ -78,7 +78,7 @@
 
     if (++n < unthrottlers.length) {
       countDown(30);
-      setTimeout(() => start(n, 30000), 30 * 1000);
+      setTimeout(() => start(n, 40000), 30 * 1000);
     } else {
       div_next.style.display = 'none';
       div_usage.style.display = 'none';

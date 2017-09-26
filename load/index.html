@@ -124,18 +124,19 @@
     document.location = url;
   }
 
-  function norm(e) {
+  function norm(e, d) {
     switch(e.id) {
       case "load": {
-        let v = +e.value;
+        let v = d || +e.value;
         v = isNaN(v) && load || v;
         v = Math.min(Math.max(v, 0.0), 1.0);
         load = e.value = v;
         work = period * load / slice;
+        e.value = v;
         break;
       }
       case "slice": {
-        let v = +e.value;
+        let v = d || +e.value;
         v = isNaN(v) && slice || v;
         v = Math.min(Math.max(v, 1), 100);
         slice = e.value = v;
@@ -143,7 +144,7 @@
         break;
       }
       case "period": {
-        let v = +e.value;
+        let v = d || +e.value;
         v = isNaN(v) && slice || v;
         v = Math.min(Math.max(v, 1), 60000);
         period = e.value = v;
@@ -151,7 +152,8 @@
         break;
       }
       case "select": {
-        spread = e.options[e.selectedIndex].id;
+        spread = d || e.options[e.selectedIndex].id;
+        e.selectedIndex = e.options.namedItem(spread).index;
         break;
       }
       case "pause": {
@@ -179,15 +181,11 @@
     let params = (new URL(document.location)).searchParams;
     document.getElementById('inframe').checked = params.get("inframe");
     document.getElementById('closeonclear').checked = params.get("close");
-    load = params.get("load");
-    slice = params.get("slice");
-    period = params.get("period");
-    spread = params.get("spread");
 
-    norm(document.getElementById('load'));
-    norm(document.getElementById('slice'));
-    norm(document.getElementById('period'));
-    norm(document.getElementById('select'));
+    norm(document.getElementById('load'), +params.get("load"));
+    norm(document.getElementById('slice'), +params.get("slice"));
+    norm(document.getElementById('period'), +params.get("period"));
+    norm(document.getElementById('select'), params.get("spread"));
 
     if (params.get("test") === "true") {
       window.open("test.html");
@@ -219,6 +217,10 @@
 
   function runInFrame() {
     document.getElementById('inframe').checked = true;
+  }
+
+  function resetLocation() {
+    document.location = "index.html";
   }
 
   addEventListener('load', init);
@@ -295,9 +297,11 @@
 <input type="button" onclick="addUnthrottler('audio')" value="Add audio element"/>
 <input type="button" onclick="addUnthrottler('video')" value="Add video"/>
 <input type="button" onclick="clearUnthrottler()" value="Clear unthrottler" />
-<input type="button" onclick="runTest()" value="Run test" />
 <br/>
 In iframe <input type="checkbox" id="inframe" />
 Close on clear <input type="checkbox" id="closeonclear" /><br />
 Delay unthrottling <input type="checkbox" id="delayunthrottling" /><br />
-<div id="container"></div>
+<div id="container"></div><br /><br />
+
+<input type="button" onclick="resetLocation()" value="Clear" />
+<input type="button" onclick="runTest()" value="Run test" />
