@@ -39,9 +39,18 @@
     opener.setCallback(collectData);
     offset = performance.now();
 
-    setTimeout(() => opener.start(), 1000);
-    setTimeout(() => opener.addUnthrottler(unthrottlers[n]), 1000 + time / 2);
-    setTimeout(() => stop(n), 1000 + time);
+    opener.start();
+    setTimeout(() => opener.addUnthrottler(unthrottlers[n]), time / 2);
+    setTimeout(() => stop(n), time);
+  }
+
+  function countDown(n) {
+    next = n;
+    next_ctr_handle = setInterval(function() {
+      if (next) {
+        output_next.innerText = --next;
+      }
+    }, 1000);
   }
 
   function stop(n) {
@@ -56,12 +65,7 @@
     $.plot($("#plot" + n), [ data ], { yaxis: { max: max * 1.2 }, series: series });
 
     if (++n < unthrottlers.length) {
-      next = 30;
-      next_ctr_handle = setInterval(function() {
-        if (next) {
-          output_next.innerText = --next;
-        }
-      }, 1000);
+      countDown(next);
       setTimeout(() => start(n, 30000), next * 1000);
     } else {
       div_next.style.display = 'none';
@@ -76,7 +80,10 @@
     output_unthrottler = document.getElementById('output_unthrottler');
     div_usage = document.getElementById('div_usage');
     div_next = document.getElementById('div_next');
-    start(0, 60000);
+
+    output_next.innerText = 10;
+    countDown(10);
+    setTimeout(() => start(0, 60000), 10000);
   }
 
   function uninit() {
@@ -85,7 +92,7 @@
   addEventListener('load', init);
   addEventListener('unload', uninit);
 </script>
-<div id="div_usage">
+<div id="div_usage" style="display:none">
   Current throttling level: <span id="output_usage"></span>%<br/>
   Current unthrottler: <span id="output_unthrottler"></span>
 </div>
