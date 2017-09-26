@@ -36,6 +36,12 @@
     output_next.innerText = 0;
     output_usage.innerText = 0;
     output_unthrottler.innerText = unthrottlers[n];
+
+    if (!opener) {
+      document.location = "index.html";
+      return;
+    }
+
     opener.setCallback(collectData);
     offset = performance.now();
 
@@ -46,6 +52,7 @@
 
   function countDown(n) {
     next = n;
+    clearInterval(next_ctr_handle);
     next_ctr_handle = setInterval(function() {
       if (next) {
         output_next.innerText = --next;
@@ -54,6 +61,11 @@
   }
 
   function stop(n) {
+    if (!opener) {
+      document.location = "index.html";
+      return;
+    }
+
     opener.stop();
     opener.clearUnthrottler();
     div_next.style.display = 'inline';
@@ -65,8 +77,8 @@
     $.plot($("#plot" + n), [ data ], { yaxis: { max: max * 1.2 }, series: series });
 
     if (++n < unthrottlers.length) {
-      countDown(next);
-      setTimeout(() => start(n, 30000), next * 1000);
+      countDown(30);
+      setTimeout(() => start(n, 30000), 30 * 1000);
     } else {
       div_next.style.display = 'none';
       div_usage.style.display = 'none';
@@ -75,20 +87,28 @@
   }
 
   function init() {
+    if (!opener) {
+      document.location = "index.html";
+      return;
+    }
+
     output_usage = document.getElementById('output_usage');
     output_next = document.getElementById('output_next');
     output_unthrottler = document.getElementById('output_unthrottler');
     div_usage = document.getElementById('div_usage');
     div_next = document.getElementById('div_next');
 
-    output_next.innerText = 10;
-    countDown(10);
-    setTimeout(() => start(0, 60000), 10000);
+    output_next.innerText = 5;
+    countDown(5);
+    setTimeout(() => start(0, 60000), 5000);
   }
 
   function uninit() {
-    opener.stop();
+    if (opener) {
+      opener.stop();
+    }
   }
+
   addEventListener('load', init);
   addEventListener('unload', uninit);
 </script>
