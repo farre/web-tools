@@ -45,7 +45,7 @@ function addUnthrottler(type) {
 
 function clearUnthrottler() {
   stream = null;
-  let close = document.getElementById('closeonclear').checked;
+  let close = document.getElementById('close').checked;
   if (rtc && close) {
     rtc.close()
   }

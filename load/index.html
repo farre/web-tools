@@ -18,14 +18,27 @@
   let pauseDelay = 5000;
 
   let running = false;
-  let pending = 0;
   let done = 0;
   let timeouts = [];
-  let handle = 0;
+  let handles = [];
+  let timestamp = 0;
+  let previousIdle = 0;
 
   let callback = function() {}
 
+  function clearTimeouts() {
+    for (let h of handles) {
+      clearTimeout(h);
+    }
+
+    handles = [];
+  }
+
   function run() {
+    if (!running) {
+      return;
+    }
+
     let idle = period * (1 - load) / slice;
     let initialIdle = idle;
     let randm = false;
@@ -38,7 +51,9 @@
     }
 
     let first = true;
-    let previousIdle = 0;
+    let offset = 0;
+    timestamp = performance.now();
+
     for (let n of slice.times()) {
       let w = work;
       let i = first ? initialIdle : idle;
@@ -49,47 +64,37 @@
       }
 
       first = false;
-      timeouts.push({work: w, idle: i});
-    }
+      let s = {work: w, idle: i, handle: 0, id: n};
 
-    runSlice()
+      s.handle = setTimeout(getSliceHandler(s), offset + i);
+      handles.push(s.handle);
+      offset += i + w;
+    }
   }
 
-  function runSlice() {
-    if (!running) {
-      return;
+  function getSliceHandler(s) {
+    let slice = s;
+    return function() {
+      let h = handles.shift(1);
+      busy(slice.work, slice.idle);
+
+      if (!handles.length) {
+        run();
+      }
     }
-
-    if (paused) {
-      alert("Press OK to resume");
-      paused = false;
-    }
-
-    let slice = timeouts.pop();
-
-    handle = function() {
-      let work = slice.work;
-      let idle = slice.idle;
-      let start = performance.now();
-      return setTimeout(_ => busy(work, idle, start), idle);
-    }();
   }
 
-  function busy(work, delay, start) {
+  function busy(work, delay) {
     let now = performance.now();
     let end = now + work;
 
-    callback(work, delay, now - start);
+    callback(work, delay, now - timestamp);
 
     while (performance.now() < end) {
 
     }
 
-    if (timeouts.length) {
-      runSlice();
-    } else {
-      run();
-    }
+    timestamp = performance.now();
   }
 
   function start() {
@@ -106,15 +111,16 @@
     b.value = "Start";
     b.onclick = start;
     running = false;
-    clearTimeout(handle);
+    clearTimeouts();
     timeouts = [];
+
     clearUnthrottler()
 
     let url = new URL(document.location);
     let params = url.searchParams;
-    params.set("inframe", document.getElementById('inframe').checked);
-    params.set("close", document.getElementById('closeonclear').checked);
-    params.set("test", false);
+    params.set("inframe", +document.getElementById('inframe').checked);
+    params.set("close", +document.getElementById('close').checked);
+    params.set("test", 0);
     params.set("load", load);
     params.set("slice", slice);
     params.set("period", period);
@@ -169,7 +175,7 @@
 
   function reset(e) {
     norm(e);
-    clearTimeout(handle);
+    clearTimeouts();
     timeouts = [];
 
     if (running) {
@@ -177,17 +183,25 @@
     }
   }
 
+  function check(v, d) {
+    return (v === null) ? d : v;
+  }
+
+  function dv(id) {
+    return document.getElementById(id).value;
+  }
+
   function init() {
     let params = (new URL(document.location)).searchParams;
-    document.getElementById('inframe').checked = params.get("inframe");
-    document.getElementById('closeonclear').checked = params.get("close");
+    document.getElementById('inframe').checked = +check(params.get("inframe"), 1);
+    document.getElementById('close').checked = +check(params.get("close"), 1);
 
-    norm(document.getElementById('load'), +params.get("load"));
-    norm(document.getElementById('slice'), +params.get("slice"));
-    norm(document.getElementById('period'), +params.get("period"));
-    norm(document.getElementById('select'), params.get("spread"));
+    norm(document.getElementById('load'), check(params.get("load"), dv("load")));
+    norm(document.getElementById('slice'), check(params.get("slice"), dv("slice")));
+    norm(document.getElementById('period'), check(params.get("period"), dv("period")));
+    norm(document.getElementById('select'), check(params.get("spread"), "uniform"));
 
-    if (params.get("test") === "true") {
+    if (+check(params.get("test"), 0)) {
       window.open("test.html");
     }
   }
@@ -197,11 +211,15 @@
   }
 
   function runTest() {
+    if (!window.confirm("This will run audio. Make sure to allow the test runner pop-up.")) {
+      return;
+    }
+
     let url = new URL(document.location);
     let params = url.searchParams;
-    params.set("inframe", document.getElementById('inframe').checked);
-    params.set("close", document.getElementById('closeonclear').checked);
-    params.set("test", true);
+    params.set("inframe", +document.getElementById('inframe').checked);
+    params.set("close", +document.getElementById('close').checked);
+    params.set("test", 1);
     params.set("load", load);
     params.set("slice", slice);
     params.set("period", period);
@@ -221,87 +239,91 @@
 
   function resetLocation() {
     document.location = "index.html";
+    init();
   }
 
   addEventListener('load', init);
 </script>
-<table>
-  <tr>
-    <td>
-      Load:
-    </td>
-    <td>
-      <input type="text" id="load" onchange="reset(this)" value="0.5"></input> ms
-    </td>
-  </tr>
-  <tr>
-    <td>
-      Slices#:
-    </td>
-    <td>
-      <input type="text" id="slice" onchange="reset(this)" value="10"></input>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      Period:
-    </td>
-    <td>
-      <input type="text" id="period" onchange="reset(this)" value="1000"></input> ms
-    </td>
-  </tr>
-  <tr>
-    <td>
-      Spread:
-    </td>
-    <td>
-      <select id="select" onchange="reset(this)">
-        <option id="uniform">Uniform</option>
-        <option id="random">Random</option>n
-        <option id="cluster">Cluster</option>
-      </select>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      Delay before pause:
-    </td>
-    <td>
-      <input type="text" id="pause" onchange="norm(this)" value="5000"></input> ms
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <input id="toggle" type="button" value="Start" onclick="start()">
-    </td>
-    <td>
-      <input type="button" value="Pause" onclick="pause()">
-    </td>
-  </tr>
-  <tr>
-    <td>
-      Length of work:
-    </td>
-    <td>
-      <span id="work"></span>ms
-    </td>
-  </tr>
-</table>
-
-<br/><br/>
-<input type="button" onclick="addUnthrottler('gUM')" value="Add gUM"/>
-<input type="button" onclick="addUnthrottler('iDB')" value="Add IndexedDB"/>
-<input type="button" onclick="addUnthrottler('ws')" value="Add WebSocket"/>
-<input type="button" onclick="addUnthrottler('rtc')" value="Add peer connection"/>
-<input type="button" onclick="addUnthrottler('webaudio')" value="Add web audio"/>
-<input type="button" onclick="addUnthrottler('audio')" value="Add audio element"/>
-<input type="button" onclick="addUnthrottler('video')" value="Add video"/>
-<input type="button" onclick="clearUnthrottler()" value="Clear unthrottler" />
+<div style="border-style: solid; border-width: 1px; padding: 3px; display: inline-block">
+  <table>
+    <tr>
+      <td colspan="2">Load settings:</td>
+    </tr>
+    <tr>
+      <td>Load:</td>
+      <td><input type="text" id="load" onchange="reset(this)" value="0.5"></input> ms</td>
+    </tr>
+    <tr>
+      <td>Slices#:</td>
+      <td><input type="text" id="slice" onchange="reset(this)" value="10"></input></td>
+    </tr>
+    <tr>
+      <td>Period:</td>
+      <td><input type="text" id="period" onchange="reset(this)" value="1000"></input> ms</td>
+    </tr>
+    <tr>
+      <td>Spread:</td>
+      <td>
+        <select id="select" onchange="reset(this)">
+          <option id="uniform">Uniform</option>
+          <!-- <option id="random">Random</option> -->
+          <option id="cluster">Cluster</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Delay before pause:</td>
+      <td><input type="text" id="pause" onchange="norm(this)" value="5000"></input> ms</td>
+    </tr>
+    <tr>
+      <td>Length of work:</td>
+      <td><span id="work"></span> ms</td>
+    </tr>
+  </table>
+</div>
 <br/>
-In iframe <input type="checkbox" id="inframe" />
-Close on clear <input type="checkbox" id="closeonclear" /><br />
-Delay unthrottling <input type="checkbox" id="delayunthrottling" /><br />
-<div id="container"></div><br /><br />
-
-<input type="button" onclick="resetLocation()" value="Clear" />
-<input type="button" onclick="runTest()" value="Run test" />
+<div style="border-style: solid; border-width: 1px; padding: 3px; display: inline-block">
+  <table>
+    <tr>
+      <td colspan="2">Run load manually:</td>
+    </tr>
+    <tr>
+      <td><input type="button" onclick="addUnthrottler('gUM')" value="Add gUM"/></td>
+      <td><input type="button" onclick="addUnthrottler('iDB')" value="Add IndexedDB"/></td>
+    </tr>
+    <tr>
+      <td><input type="button" onclick="addUnthrottler('ws')" value="Add WebSocket"/></td>
+      <td><input type="button" onclick="addUnthrottler('rtc')" value="Add peer connection"/></td>
+    </tr>
+    <tr>
+      <td><input type="button" onclick="addUnthrottler('webaudio')" value="Add web audio"/></td>
+      <td><input type="button" onclick="addUnthrottler('audio')" value="Add audio element"/></td>
+    </tr>
+    <tr>
+      <td><input type="button" onclick="addUnthrottler('video')" value="Add video"/></td>
+      <td><input type="button" onclick="clearUnthrottler()" value="Clear unthrottler" /></td>
+    </tr>
+    <tr>
+      <td><input id="toggle" type="button" value="Start" onclick="start()"></td>
+      <td><input type="button" value="Pause" onclick="pause()"></td>
+    </tr>
+  </table>
+</div>
+<br/>
+<div style="border-style: solid; border-width: 1px; padding: 3px; display: inline-block">
+  <table>
+    <tr>
+      <td colspan="2">Run test suite:</td>
+    </tr>
+    <tr>
+      <td>In iframe <input type="checkbox" id="inframe" /></td>
+      <td>Close on clear <input type="checkbox" id="close" /><br /></td>
+    </tr>
+    <tr>
+      <td><input type="button" onclick="resetLocation()" value="Reset defaults" /></td>
+      <td><input type="button" onclick="runTest()" value="Run test" /></td>
+    </tr>
+  </table>
+</div>
+<br/>
+<div id="container"></div>

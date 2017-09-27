@@ -1,3 +1,7 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8"/>
+</head>
 <script language="javascript" type="text/javascript" src="flot/jquery.js"></script>
 <script language="javascript" type="text/javascript" src="flot/jquery.flot.js"></script>
 
@@ -9,6 +13,8 @@
   let offset;
   let next_ctr_handle = 0;
   var next = 0;
+  let ctr = 0;
+  let current;
 
   let series = {
     points: {
@@ -20,7 +26,7 @@
   }
 
   function collectData(work, delay, actual) {
-    let value = (work / (actual + work)) * 100;
+    let value = ((work) / (Math.max(actual, delay) + work)) * 100;
     max = Math.max(max, value);
 
     data.push([performance.now() - offset, value])
@@ -28,6 +34,8 @@
   }
 
   function start(n, time) {
+    current = unthrottlers[n];
+
     max = 0;
     clearInterval(next_ctr_handle);
     div_next.style.display = 'none';
