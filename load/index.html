@@ -41,15 +41,11 @@
 
     let idle = period * (1 - load) / slice;
     let initialIdle = idle;
-    let randm = false;
 
     if (spread === "cluster") {
       initialIdle = idle * slice - slice;
       idle = 1;
-    } else if (spread === "random") {
-      randm = true;
     }
-
     let first = true;
     let offset = 0;
     timestamp = performance.now();
@@ -57,11 +53,6 @@
     for (let n of slice.times()) {
       let w = work;
       let i = first ? initialIdle : idle;
-      if (randm) {
-        let r = n !== slice ? (Math.random() - 0.5) * idle : 0;
-        i += r - previousIdle;
-        previousIdle = r
-      }
 
       first = false;
       let s = {work: w, idle: i, handle: 0, id: n};
