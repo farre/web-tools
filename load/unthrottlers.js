@@ -141,11 +141,14 @@ function addWebSocket() {
 
 function addWebAudio() {
   let context = new (window.AudioContext || window.webkitAudioContext)();
+  let gain = context.createGain();
+  gain.gain.value = 0.1;
+  gain.connect(context.destination);
 
   webaudionode = context.createOscillator();
   webaudionode.type = 'square';
   webaudionode.frequency.value = 440; // value in hertz
-  webaudionode.connect(context.destination);
+  webaudionode.connect(gain);
   webaudionode.start();
 }
 
@@ -153,6 +156,7 @@ function addAudioElement() {
   audionode = document.createElement('audio');
   audionode.src = "sine.wav";
   audionode.loop = true;
+  audionode.volume = 0.1;
 
   document.body.appendChild(audionode);
 
@@ -163,6 +167,7 @@ function addVideoElement() {
   videonode = document.createElement('video');
   videonode.src = "video.webm";
   videonode.loop = true;
+  videonode.volume = 0.1;
 
   document.body.appendChild(videonode);
 
