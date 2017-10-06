@@ -287,10 +287,10 @@
   <div style="border-style: solid; border-width: 1px; padding: 3px; display: inline-block">
     <table>
       <tr>
-        <td colspan="2">Run load manually:</td>
+        <td colspan="2">Unthrottlers:</td>
       </tr>
       <tr>
-        <td><input type="button" onclick="addUnthrottler('gUM')" value="Add gUM"/></td>
+        <td><input type="button" onclick="addUnthrottler('video')" value="Add video"/></td>
         <td><input type="button" onclick="addUnthrottler('iDB')" value="Add IndexedDB"/></td>
       </tr>
       <tr>
@@ -302,12 +302,8 @@
         <td><input type="button" onclick="addUnthrottler('audio')" value="Add audio element"/></td>
       </tr>
       <tr>
-        <td><input type="button" onclick="addUnthrottler('video')" value="Add video"/></td>
         <td><input type="button" onclick="clearUnthrottler()" value="Clear unthrottler" /></td>
-      </tr>
-      <tr>
-        <td><input id="toggle" type="button" value="Start" onclick="start()"></td>
-        <td><input type="button" value="Pause" onclick="pause()"></td>
+        <td></td>
       </tr>
     </table>
   </div>
@@ -315,12 +311,31 @@
   <div style="border-style: solid; border-width: 1px; padding: 3px; display: inline-block">
     <table>
       <tr>
-        <td colspan="2">Run test suite:</td>
+        <td colspan="2">Unthrottler settings:</td>
       </tr>
       <tr>
         <td>In iframe <input type="checkbox" id="inframe" /></td>
         <td>In new window <input type="checkbox" id="newwin" /><br /></td>
         <td>Close on clear <input type="checkbox" id="close" /><br /></td>
+      </tr>
+    </table>
+  </div>
+  <br />
+  <div style="border-style: solid; border-width: 1px; padding: 3px; display: inline-block">
+    <table>
+      <tr>
+        <td colspan="2">Run load manually:</td>
+      </tr>
+      <tr>
+        <td><input id="toggle" type="button" value="Start" onclick="start()"></td>
+        <td><input type="button" value="Pause" onclick="pause()"></td>
+      </tr>
+    </table>
+  </div>
+  <div style="border-style: solid; border-width: 1px; padding: 3px; display: inline-block">
+    <table>
+      <tr>
+        <td colspan="2">Run test suite:</td>
       </tr>
       <tr>
         <td><input type="button" onclick="resetLocation()" value="Reset defaults" /></td>
