@@ -1,0 +1,7 @@
+<iframe id="frame"></iframe>
+<script>
+  addEventListener('load', () => {
+    let params = (new URL(document.location)).searchParams;
+    document.getElementById('frame').src = params.get('address');
+  })
+</script>
