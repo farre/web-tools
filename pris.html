@@ -1,0 +1,96 @@
+<script>
+  function value(sell, improvements) {
+    let value = sell;
+    let currentLoan = 500000 + 692000 + 790000 + 772000;
+    let trust = 41220;
+    let stamp = 58500;
+    let dealer = Math.min(sell, 4300000) * 0.022 + Math.max(sell - 4300000, 0) * 0.1;
+    let cash = 0.3 * 3900000;
+
+    let profit = sell - 3900000 - dealer - (4100000 * 0.7 - 1600000) * 0.015 - improvements;
+
+    let tax = Math.max(profit, 0) * (22/30) * 0.3;
+
+    value -= currentLoan + trust + stamp + dealer + cash + tax;
+
+    return {value, profit, tax};
+  }
+
+  function update() {
+    let data = +document.getElementById('input').value;
+    let improvements = +document.getElementById('improvements').value;
+    let estimates = value(data, improvements);
+    document.getElementById('output').innerText = Math.round(estimates.value);
+    document.getElementById('output-profit').innerText = Math.round(estimates.profit);
+    document.getElementById('output-tax').innerText = Math.round(estimates.tax);
+  }
+
+  function init() {
+    update({value})
+  }
+
+  addEventListener('load', init)
+</script>
+<style>
+ .result {
+     text-align: right;
+ }
+</style>
+
+<br />
+<table>
+  <tr>
+    <td>
+      Improvement costs:
+    </td>
+    <td class="result">
+      <input id="improvements" type="number" value="70000" onchange="update()" onclick="update()" step="1000">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Sell for:
+    </td>
+    <td class="result">
+      <input id ="input" type="number" value="4200000" onchange="update()" onclick="update()" step="10000">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <input type="button" value="Update">
+    </td>
+  </tr>
+</table>
+<br />
+<table>
+  <tr>
+    <td colspan="2">
+      Results<br />
+      ===================
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Profit:
+    </td>
+    <td class="result">
+      <span id="output-profit"></span>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Tax:
+    </td>
+    <td class="result">
+      <span id="output-tax"></span>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Money left:
+    </td>
+    <td class="result">
+      <span id="output"></span>
+    </td>
+  </tr>
+</table>
