@@ -209,6 +209,16 @@ class Diagram {
   push(row, url) {
     const pseudoURL = new PseudoURL(url);
 
+    let sameTop = !(row && this.current);
+    if (!sameTop) {
+      const index = this.rows[0].findIndex(this.current);
+      const top = this.rows[0].entries[index];
+      const previousTop = this.rows[0].entries[index - 1];
+      sameTop = previousTop && top.isSameDocument(previousTop);
+    } else {
+      sameTop = true;
+    }
+
     const newRow = !this.rows[row].size;
     if (!newRow && this.rows[row].current == this.current) {
       this.current++;
@@ -217,14 +227,6 @@ class Diagram {
     const entry = new Entry(this.current, pseudoURL);
     const newTop = row == 0 && !newRow  && !this.rows[row].isSameDocument(this.current, entry);
 
-    let sameTop = false;
-    if (row && this.current) {
-      const top = this.rows[0].entries[this.rows[0].findIndex(this.current)];
-      const previousTop = this.rows[0].entries[this.rows[0].findIndex(this.current - 1)];
-      sameTop = top.isSameDocument(previousTop);
-    } else {
-      sameTop = true;
-    }
     this.rows[row].push(entry, sameTop);
     this.history.push(entry);
     this.update(newTop, this.current + 1);
@@ -238,7 +240,12 @@ class Diagram {
 
   update(newTop, end) {
     for (let row of this.rows) {
-      row.update(newTop, end);
+      let sameTop = true;
+      const top = this.rows[0].entries[this.rows[0].findIndex(this.current)];
+      const previousTop = row.size ? this.rows[0].entries[this.rows[0].findIndex(row.entries[row.size - 1].end - 1)] : null;
+      if (row === this.rows[0] || previousTop && top.isSameDocument(previousTop)) {
+        row.update(newTop, end);
+      }
     }
   }
 }
