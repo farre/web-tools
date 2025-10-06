@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Jake Diagram Generator</title>
+<link rel="stylesheet" href="https://resources.whatwg.org/spec.css">
+<link rel="stylesheet" href="https://resources.whatwg.org/standard.css">
+<link rel="stylesheet" href="https://resources.whatwg.org/standard-shared-with-dev.css">
+
+<link rel="stylesheet" href="https://domenic.github.io/jake-diagram-generator/css/jake-diagrams.css">
+<link rel="stylesheet" href="https://domenic.github.io/jake-diagram-generator/css/generator.css">
+
+<h1>Reactive Jake Diagram Generator</h1>
+<script>
+Array.prototype.last = function last() {
+  if (!this.length) {
+    return undefined;
+  }
+  return this[this.length - 1];
+}
+
+class PseudoURL {
+  url = "about:blank"
+  constructor(url) {
+    if (url) {
+    this.url = url;
+    }
+  }
+
+  isSameDocument(other) {
+    return this.path === other.path;
+  }
+
+  toString() {
+    return this.url;
+  }
+
+  get path() {
+    return this.url.split('#')[0];
+  }
+}
+
+Map.prototype.getOrInsert = Map.prototype.getOrInsert || function getOrInsert(key, defaultValue) {
+  if (this.has(key)) {
+    return this.get(key);
+  }
+  this.set(key, defaultValue);
+  return defaultValue;
+}
+
+const colors = new Map();
+function getColor(path) {
+  return colors.getOrInsert(path, `doc-${colors.size}`)
+}
+
+class Entry {
+  empty = true
+  nextIsSame = false;
+  constructor(index, url) {
+    if (url) {
+      this.url = url;
+      this.empty = false;
+    }
+    this.start = index;
+    this.end = index + 1;
+  }
+
+  update(end) {
+    this.end = end;
+  }
+
+  render(current, prevWasSame) {
+    const entry = document.createElement("td");
+    if (!this.empty) {
+      entry.innerText = this.url;
+    }
+    const colspan = this.end - this.start;
+    if (colspan > 1) {
+      entry.setAttribute('colspan', colspan);
+    }
+    const state = this.empty ? [] : [getColor(this.url.path)];
+    if (this.start <= current && current < this.end) {
+      state.push("current");
+    }
+    if (prevWasSame) {
+      state.push("prev-is-same-doc");
+    }
+    if (this.nextIsSame) {
+      state.push("next-is-same-doc");
+    }
+    entry.setAttribute('class', state.join(" "));
+
+    return entry;
+  }
+
+  isSameDocument(other) {
+    if (this.empty || other.empty) {
+      return false;
+    }
+    return this.url.isSameDocument(other.url);
+  }
+}
+
+class Row {
+  name = ""
+  entries = []
+  constructor(name, current) {
+    this.name = name;
+    const last = this.size > 0 ? this.entries.last().end : 0;
+    if (current > last) {
+      const entry = new Entry(last);
+      this.entries.push(entry);
+      entry.update(current);
+    }
+  }
+
+  push(entry, sameTop) {
+    if (this.size && this.entries[this.size - 1].end != entry.start) {
+      this.entries.push(new Entry(this.entries[this.size - 1].end))
+    } else if (!this.size && entry.start) {
+      this.entries.push(new Entry(0));
+      this.entries[0].update(entry.start);
+    }
+
+    const last = this.entries.last();
+    if (last && sameTop && last.isSameDocument(entry)) {
+      last.nextIsSame = true;
+    }
+    this.entries.push(entry);
+  }
+
+  update(newTop, end) {
+    if (newTop) {
+      return;
+    }
+
+    if (this.size) {
+      this.entries[this.size - 1].update(end)
+    }
+  }
+
+  render(current) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<th><code data-x="">${this.name}</code></th>`
+    let prevWasSame = false;
+    for (let j = 0; j < this.entries.length; ++j) {
+      row.appendChild(this.entries[j].render(current, prevWasSame));
+      prevWasSame = this.entries[j].nextIsSame;
+    }
+
+    return row;
+  }
+
+  findIndex(current) {
+    for (let i = this.entries.length; i > 0; --i) {
+      const entry = this.entries[i - 1];
+      if (entry.start <= current && current <= entry.end) {
+        return i - 1;
+      }
+    }
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  isSameDocument(current, entry) {
+    const index = this.findIndex(current);
+    if (index >= this.size) {
+      return false;
+    }
+
+    return this.entries[index].isSameDocument(entry);
+  }
+
+  get size() {
+    return this.entries.length;
+  }
+
+  get current() {
+    return this.size ? this.entries.last().end - 1 : 0;
+  }
+}
+
+class Diagram {
+  current = 0
+  rows = [];
+  actions = [];
+  history = [];
+
+  render() {
+    const size = this.current + 1;
+    const table = document.createElement("table");
+    table.setAttribute('class', "jake-diagram");
+    table.appendChild(document.createElement("thead"));
+    const header = document.createElement("tr");
+    table.children[0].appendChild(header);
+    header.appendChild(document.createElement("td"));
+
+    for (let i = 0; i < size; ++i) {
+      const cell = document.createElement("th");
+      cell.setAttribute('class', this.current == i ? "step current" : "step");
+      cell.innerText = i;
+      header.appendChild(cell)
+    }
+    const body = document.createElement("tbody");
+    for (let i = 0; i < this.rows.length; ++i) {
+      body.appendChild(this.rows[i].render(this.current));
+    }
+    table.appendChild(body);
+    return table;
+  }
+
+  push(row, url) {
+    const pseudoURL = new PseudoURL(url);
+
+    const newRow = !this.rows[row].size;
+    if (!newRow && this.rows[row].current == this.current) {
+      this.current++;
+    }
+
+    const entry = new Entry(this.current, pseudoURL);
+    const newTop = row == 0 && !newRow  && !this.rows[row].isSameDocument(this.current, entry);
+
+    let sameTop = false;
+    if (row && this.current) {
+      const top = this.rows[0].entries[this.rows[0].findIndex(this.current)];
+      const previousTop = this.rows[0].entries[this.rows[0].findIndex(this.current - 1)];
+      sameTop = top.isSameDocument(previousTop);
+    } else {
+      sameTop = true;
+    }
+    this.rows[row].push(entry, sameTop);
+    this.history.push(entry);
+    this.update(newTop, this.current + 1);
+  }
+
+  addRow() {
+    const row = this.rows.length;
+    const name = this.rows.length < 1 ? "top" : `frames[${row - 1}]`
+    this.rows.push(new Row(name, this.current));
+  }
+
+  update(newTop, end) {
+    for (let row of this.rows) {
+      row.update(newTop, end);
+    }
+  }
+}
+
+let diagram = new Diagram();
+diagram.addRow();
+
+function addFrame() {
+  const option = document.createElement('option');
+  const size = diagram.rows.length;
+  option.innerText = !size ? "top" : size - 1;
+  option.value = size;
+  diagram.addRow();
+  currentFrames.add(option)
+}
+
+function push() {
+  const index = +currentFrames.selectedIndex;
+  if (index && !diagram.rows[0].size) {
+    return;
+  }
+  diagram.push(index, path.value)
+  const newDiagram = diagram.render();
+  const oldDiagram = output.firstChild;
+  oldDiagram.remove();
+  output.append(newDiagram);
+  old.append(oldDiagram);
+}
+
+function updateFrames() {
+  currentFrames.replaceChildren();
+  const size = diagram.rows.length;
+  for (let i = 0; i < size; ++i) {
+    const option = document.createElement('option');
+    option.innerText = !i ? "top" : i - 1;
+    option.value = i;
+    currentFrames.add(option);
+  }
+}
+
+addEventListener('load', updateFrames, {once: true});
+
+</script>
+<input type="button" value="+" onclick="addFrame()">
+<select id="currentFrames">
+</select>
+<label for="path">URL: </label><input type="text" id="path">
+<input type="button" value="Push" onclick="push()"><br><br>
+
+<details id="old"></details>
+<div id="output"><span></span></div>
