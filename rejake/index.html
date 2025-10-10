@@ -19,7 +19,7 @@
 
 <details id="old"></details>
 <div id="output"><span></span></div>
-<input type="button" value=" < "> <input type="button" value=" > ">
+<input type="button" value=" < " onclick="back()"> <input type="button" value=" > " onclick="forward()">
 <input type="button" value="&#x1F517;" onclick="share()">
 
 <script>
@@ -202,7 +202,8 @@ class Action {
 }
 
 class Diagram {
-  current = 0
+  current = 0;
+  selected = 0;
   rows = [];
   actions = [];
   history = [];
@@ -218,13 +219,13 @@ class Diagram {
 
     for (let i = 0; i < size; ++i) {
       const cell = document.createElement("th");
-      cell.setAttribute('class', this.current == i ? "step current" : "step");
+      cell.setAttribute('class', this.selected == i ? "step current" : "step");
       cell.innerText = i;
       header.appendChild(cell)
     }
     const body = document.createElement("tbody");
     for (let i = 0; i < this.rows.length; ++i) {
-      body.appendChild(this.rows[i].render(this.current));
+      body.appendChild(this.rows[i].render(this.selected));
     }
     table.appendChild(body);
     return table;
@@ -256,6 +257,8 @@ class Diagram {
     this.rows[row].push(entry, sameTop);
     this.history.push(entry);
     this.update(newTop, this.current + 1);
+
+    this.selected = this.current;
   }
 
   addRow() {
@@ -274,6 +277,14 @@ class Diagram {
         row.update(newTop, end);
       }
     }
+  }
+
+  back() {
+    this.selected = Math.max(0, this.selected - 1);
+  }
+
+  forward() {
+    this.selected = Math.min(this.current, this.selected + 1);
   }
 
   toString() {
@@ -298,6 +309,24 @@ function push() {
     return;
   }
   diagram.push(index, path.value)
+  const newDiagram = diagram.render();
+  const oldDiagram = output.firstChild;
+  oldDiagram.remove();
+  output.append(newDiagram);
+  old.append(oldDiagram);
+}
+
+function back() {
+  diagram.back();
+  const newDiagram = diagram.render();
+  const oldDiagram = output.firstChild;
+  oldDiagram.remove();
+  output.append(newDiagram);
+  old.append(oldDiagram);
+}
+
+function forward() {
+  diagram.forward();
   const newDiagram = diagram.render();
   const oldDiagram = output.firstChild;
   oldDiagram.remove();
