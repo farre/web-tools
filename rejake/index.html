@@ -8,7 +8,20 @@
 <link rel="stylesheet" href="https://domenic.github.io/jake-diagram-generator/css/jake-diagrams.css">
 <link rel="stylesheet" href="https://domenic.github.io/jake-diagram-generator/css/generator.css">
 
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+
 <h1>Reactive Jake Diagram Generator</h1>
+<input type="button" value="+" onclick="addFrame()">
+<select id="currentFrames">
+</select>
+<label for="path">URL: </label><input type="text" id="path">
+<input type="button" value="Push" onclick="push()"><br><br>
+
+<details id="old"></details>
+<div id="output"><span></span></div>
+<input type="button" value=" < "> <input type="button" value=" > ">
+<input type="button" value="&#x1F517;" onclick="share()">
+
 <script>
 Array.prototype.last = function last() {
   if (!this.length) {
@@ -177,6 +190,17 @@ class Row {
   }
 }
 
+class Action {
+  constructor(type, ...args) {
+    this.type = type;
+    this.args = args ?? [];
+  }
+
+  toString() {
+    return [this.type, this.args.length, ...this.args].join();
+  }
+}
+
 class Diagram {
   current = 0
   rows = [];
@@ -207,6 +231,8 @@ class Diagram {
   }
 
   push(row, url) {
+    row = +row;
+    this.actions.push(new Action("push", row, url));
     const pseudoURL = new PseudoURL(url);
 
     let sameTop = !(row && this.current);
@@ -233,6 +259,7 @@ class Diagram {
   }
 
   addRow() {
+    this.actions.push(new Action("addRow"));
     const row = this.rows.length;
     const name = this.rows.length < 1 ? "top" : `frames[${row - 1}]`
     this.rows.push(new Row(name, this.current));
@@ -248,10 +275,13 @@ class Diagram {
       }
     }
   }
+
+  toString() {
+    return LZString.compressToEncodedURIComponent(this.actions.map(a => a.toString()).join(','));
+  }
 }
 
 let diagram = new Diagram();
-diagram.addRow();
 
 function addFrame() {
   const option = document.createElement('option');
@@ -286,14 +316,36 @@ function updateFrames() {
   }
 }
 
+function share() {
+  history.pushState(null, null, `?d=${diagram.toString()}`);
+}
+
+function decompress(str) {
+  if (!str || !str.length) {
+    return [];
+  }
+
+  return LZString.decompressFromEncodedURIComponent(str).split(',')
+}
+
+const params = new URLSearchParams(location.search);
+const actions = decompress(params.get('d'))
+if (actions.length) {
+  for (let action = actions.shift(); actions.length; action = actions.shift()) {
+    const argc = +actions.shift();
+    diagram[action](...actions.slice(0, argc));
+    actions.splice(0, argc);
+
+    const newDiagram = diagram.render();
+    const oldDiagram = output.firstChild;
+    oldDiagram.remove();
+    output.append(newDiagram);
+    old.append(oldDiagram);
+  }
+} else {
+  diagram.addRow();
+}
+
 addEventListener('load', updateFrames, {once: true});
 
 </script>
-<input type="button" value="+" onclick="addFrame()">
-<select id="currentFrames">
-</select>
-<label for="path">URL: </label><input type="text" id="path">
-<input type="button" value="Push" onclick="push()"><br><br>
-
-<details id="old"></details>
-<div id="output"><span></span></div>
