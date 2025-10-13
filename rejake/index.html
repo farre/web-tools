@@ -206,7 +206,6 @@ class Diagram {
   selected = 0;
   rows = [];
   actions = [];
-  history = [];
 
   render() {
     const size = this.current + 1;
@@ -232,6 +231,11 @@ class Diagram {
   }
 
   push(row, url) {
+    if (this.selected != this.current) {
+      this.actions.push(new Action("trim", row, this.selected));
+      this.trim(row, this.selected);
+    }
+
     row = +row;
     this.actions.push(new Action("push", row, url));
     const pseudoURL = new PseudoURL(url);
@@ -255,7 +259,6 @@ class Diagram {
     const newTop = row == 0 && !newRow  && !this.rows[row].isSameDocument(this.current, entry);
 
     this.rows[row].push(entry, sameTop);
-    this.history.push(entry);
     this.update(newTop, this.current + 1);
 
     this.selected = this.current;
@@ -277,6 +280,24 @@ class Diagram {
         row.update(newTop, end);
       }
     }
+  }
+
+  trim(row, column) {
+    const index = this.rows[0].findIndex(column);
+    const entry = index != Number.MAX_SAFE_INTEGER ? this.rows[0].entries[index] : { end: -1 };
+    let next = 0;
+    for (let row of this.rows) {
+      let last = row.entries.last();
+      while (last && last.start >= entry.end) {
+        row.entries.pop();
+        last = row.entries.last();
+      }
+      if (last) {
+        last.end = entry.end;
+      }
+      next = Math.max(next, row.entries.length);
+    }
+    this.current = next;
   }
 
   back() {
@@ -301,6 +322,10 @@ function addFrame() {
   option.value = size;
   diagram.addRow();
   currentFrames.add(option)
+
+  const newDiagram = diagram.render();
+  output.firstChild.remove();
+  output.append(newDiagram);
 }
 
 function push() {
@@ -319,19 +344,15 @@ function push() {
 function back() {
   diagram.back();
   const newDiagram = diagram.render();
-  const oldDiagram = output.firstChild;
-  oldDiagram.remove();
+  output.firstChild.remove();
   output.append(newDiagram);
-  old.append(oldDiagram);
 }
 
 function forward() {
   diagram.forward();
   const newDiagram = diagram.render();
-  const oldDiagram = output.firstChild;
-  oldDiagram.remove();
+  output.firstChild.remove();
   output.append(newDiagram);
-  old.append(oldDiagram);
 }
 
 function updateFrames() {
@@ -373,6 +394,9 @@ if (actions.length) {
   }
 } else {
   diagram.addRow();
+  const newDiagram = diagram.render();
+  output.firstChild.remove();
+  output.append(newDiagram);
 }
 
 addEventListener('load', updateFrames, {once: true});
