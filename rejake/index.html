@@ -7,6 +7,23 @@
 
 <link rel="stylesheet" href="https://domenic.github.io/jake-diagram-generator/css/jake-diagrams.css">
 <link rel="stylesheet" href="https://domenic.github.io/jake-diagram-generator/css/generator.css">
+<style>
+#toast {
+  visibility: hidden;
+}
+#toast.show {
+  visibility: visible;
+  animation: fadein 0.5s, fadeout 0.5s 1.5s;
+}
+@keyframes fadein {
+  from {opacity: 0;}
+  to {opacity: 1;}
+}
+@keyframes fadeout {
+  from {opacity: 1;}
+  to {opacity: 0;}
+}
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
@@ -20,8 +37,7 @@
 <details id="old"></details>
 <div id="output"><span></span></div>
 <input type="button" value=" < " onclick="back()"> <input type="button" value=" > " onclick="forward()">
-<input type="button" value="&#x1F517;" onclick="share()">
-
+<input type="button" id="permalink" value="&#x1F517;" onclick="share()"> <span id="toast">URL copied to clipboard</span>
 <script>
 Array.prototype.last = function last() {
   if (!this.length) {
@@ -368,6 +384,16 @@ function updateFrames() {
 
 function share() {
   history.pushState(null, null, `?d=${diagram.toString()}`);
+  permalink.disabled = true;
+  navigator.clipboard.writeText(location.href).then(_ => {
+    toast.className = "show";
+    setTimeout(() => {
+      toast.className = "";
+      permalink.disabled = false;
+    }, 2000)
+  }).catch(_ => {
+    permalink.disabled = false;
+  });
 }
 
 function decompress(str) {
