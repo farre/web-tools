@@ -1,0 +1,42 @@
+
+<script>
+function navigate() {
+  const url = new URL(location.href);
+  const ctr = (+url.searchParams.get('ctr') + 1) ?? 0;
+  url.searchParams.set('ctr', ctr);
+  navigation.navigate(url.href);
+}
+function same() {
+  const url = new URL(location.href);
+  const ctr = (+url.searchParams.get('ctr') + 1) ?? 0;
+  url.hash = `#${ctr}`
+  navigation.navigate(url.href);
+}
+function cross() {
+  navigation.navigate("http://elg.no");
+}
+function replace() {
+  const url = new URL(location.href);
+  const ctr = (+url.searchParams.get('ctr') + 1) ?? 0;
+  url.searchParams.set('ctr', ctr);
+  history.replaceState({}, null, url);
+}
+function push() {
+  const url = new URL(location.href);
+  const ctr = (+url.searchParams.get('ctr') + 1) ?? 0;
+  url.searchParams.set('ctr', ctr);
+  history.pushState({}, null, url);
+}
+function frame() {
+  document.body.appendChild(document.createElement('iframe'));
+}
+function update() {
+  output.innerText = `uri: ${location.href}
+  entries: ${navigation.entries().map(e => e.key)}`
+}
+
+onload = update
+</script>
+<input type="button" onclick="navigate()" value="navigate"><input type="button" onclick="same()" value="same"><input type="button" onclick="cross()" value="cross"><input type="button" onclick="replace()" value="replace"><input type="button" onclick="push()" value="push"><input type="button" onclick="frame()" value="frame"><input type="button" value="update" onclick="update()">
+<p id="output">
+
