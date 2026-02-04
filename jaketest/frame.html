@@ -6,6 +6,12 @@ function navigate() {
   url.searchParams.set('ctr', ctr);
   navigation.navigate(url.href);
 }
+function locationNavigate() {
+  const url = new URL(location.href);
+  const ctr = (+url.searchParams.get('ctr') + 1) ?? 0;
+  url.searchParams.set('ctr', ctr);
+  location.href = url.href;
+}
 function same() {
   const url = new URL(location.href);
   const ctr = (+url.searchParams.get('ctr') + 1) ?? 0;
@@ -37,6 +43,6 @@ function update() {
 
 onload = update
 </script>
-<input type="button" onclick="navigate()" value="navigate"><input type="button" onclick="same()" value="same"><input type="button" onclick="cross()" value="cross"><input type="button" onclick="replace()" value="replace"><input type="button" onclick="push()" value="push"><input type="button" onclick="frame()" value="frame"><input type="button" value="update" onclick="update()">
+<input type="button" onclick="locationNavigate()" value="location"><input type="button" onclick="navigate()" value="navigate"><input type="button" onclick="same()" value="same"><input type="button" onclick="cross()" value="cross"><input type="button" onclick="replace()" value="replace"><input type="button" onclick="push()" value="push"><input type="button" onclick="frame()" value="frame"><input type="button" value="update" onclick="update()">
 <p id="output">
 
